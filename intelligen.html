@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliGen</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for better aesthetics */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 8px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            width: 500px;
+            text-align: center;
+            position: relative;
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen bg-gray-100">
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 text-center shadow-md rounded-b-lg flex items-center justify-between">
+        <h1 class="text-3xl font-bold rounded-lg flex-grow">IntelliGen</h1>
+        <div class="flex items-center space-x-2">
+            <button
+                id="summarize-button"
+                class="ml-2 px-4 py-2 bg-purple-700 text-white font-semibold rounded-lg shadow-md hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 ease-in-out text-sm"
+                disabled <!-- Disabled by default -->
+            >
+                ✨ Összefoglaló ✨
+            </button>
+            <button
+                id="new-chat-button"
+                class="ml-2 px-4 py-2 bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300 ease-in-out text-sm"
+            >
+                Új csevegés
+            </button>
+            <button
+                id="show-disclaimer-button"
+                class="ml-2 px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 transition duration-300 ease-in-out text-sm"
+            >
+                Információ
+            </button>
+        </div>
+    </div>
+
+    <!-- Chat area -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- Welcome message will be displayed here via JavaScript -->
+    </div>
+
+    <!-- Input area -->
+    <div class="p-4 bg-white border-t border-gray-200 shadow-lg rounded-t-lg">
+        <div class="flex items-center space-x-3">
+            <input
+                type="text"
+                id="message-input"
+                class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Írd be az üzeneted..."
+            />
+            <button
+                id="send-button"
+                class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300 ease-in-out"
+            >
+                Küldés
+            </button>
+        </div>
+    </div>
+
+    <!-- Disclaimer Modal -->
+    <div id="disclaimer-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">IntelliGen</h2>
+            <p class="text-gray-600 mb-6">Tippek a kezdő lépésekhez</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                <div class="p-3 bg-gray-50 rounded-lg shadow-sm">
+                    <p class="font-semibold text-green-600 mb-2">Nyugodtan kérdezhetsz</p>
+                    <p class="text-sm text-gray-700">Az IntelliGen megválaszol kérdéseket, segít a tanulásban, a kódírásban, az ötletelésben és még sok minden másban.</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg shadow-sm">
+                    <p class="font-semibold text-purple-600 mb-2">Ne ossz meg bizalmas információkat</p>
+                    <p class="text-sm text-gray-700">A csevegési előzményeket ellenőrizhetjük, és felhasználhatjuk modelljeink betanítására. További információt a válaszaiddal kapcsolatban a Súgóközpontban találsz.</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg shadow-sm">
+                    <p class="font-semibold text-orange-600 mb-2">Ügyelj a tényellenőrzésre</p>
+                    <p class="text-sm text-gray-700">Ugyan érvényben vannak védelmi intézkedések, előfordulhat, hogy az IntelliGen pontatlan információkat közöl. A szolgáltatásnak nem célja a tanácsadás.</p>
+                </div>
+            </div>
+            <button id="disclaimer-ok-button" class="mt-8 px-6 py-3 bg-gray-800 text-white font-semibold rounded-lg shadow-md hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-700 transition duration-300 ease-in-out">
+                Ok, kezdjük
+            </button>
+        </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="p-2 bg-gray-200 text-gray-600 text-center text-xs rounded-t-lg shadow-inner">
+        Az IntelliGen hibázhat. Fontold meg a fontos információk ellenőrzését.
+    </div>
+
+    <script type="module">
+        // DOM elements
+        const chatMessagesDiv = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const newChatButton = document.getElementById('new-chat-button');
+        const summarizeButton = document.getElementById('summarize-button');
+        const showDisclaimerButton = document.getElementById('show-disclaimer-button');
+
+        const disclaimerModal = document.getElementById('disclaimer-modal');
+        const disclaimerOkButton = document.getElementById('disclaimer-ok-button');
+
+        let welcomeMessageDiv = null;
+        let messages = [];
+        let isLoading = false;
+        
+        // Function to display the welcome message
+        function displayWelcomeMessage() {
+            if (!welcomeMessageDiv || !chatMessagesDiv.contains(welcomeMessageDiv)) {
+                welcomeMessageDiv = document.createElement('div');
+                welcomeMessageDiv.id = 'welcome-message';
+                welcomeMessageDiv.className = 'text-center text-gray-500 mt-20';
+                welcomeMessageDiv.innerHTML = `
+                    Szia! Én vagyok az **IntelliGen**. Miben segíthetek ma?
+                    <br><br>
+                    <span class="text-sm text-gray-400">(Kérem, várjon, amíg az asszisztens betölt...)</span>
+                `;
+                chatMessagesDiv.appendChild(welcomeMessageDiv);
+            }
+        }
+
+        // Add message to chat window
+        function addMessage(sender, text) {
+            if (welcomeMessageDiv && chatMessagesDiv.contains(welcomeMessageDiv)) {
+                welcomeMessageDiv.remove();
+                welcomeMessageDiv = null;
+            }
+
+            messages.push({ sender, text });
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = `max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl p-3 rounded-lg shadow-md ${
+                sender === 'user'
+                    ? 'bg-blue-500 text-white rounded-br-none'
+                    : 'bg-white text-gray-800 rounded-bl-none'
+            }`;
+            contentDiv.textContent = text;
+
+            messageDiv.appendChild(contentDiv);
+            chatMessagesDiv.appendChild(messageDiv);
+
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+
+            updateUI(); // Update button states after message
+        }
+
+        // Show/hide loading indicator
+        function toggleLoading(show) {
+            if (show) {
+                isLoading = true;
+                sendButton.disabled = true;
+                messageInput.disabled = true;
+                summarizeButton.disabled = true;
+                sendButton.classList.add('opacity-50', 'cursor-not-allowed');
+                summarizeButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loading-indicator';
+                loadingDiv.className = 'flex justify-start';
+                loadingDiv.innerHTML = `
+                    <div class="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl p-3 rounded-lg shadow-md bg-white text-gray-800 rounded-bl-none">
+                        <div class="flex items-center">
+                            <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></span>
+                        </div>
+                    </div>
+                `;
+                chatMessagesDiv.appendChild(loadingDiv);
+                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+            } else {
+                isLoading = false;
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                sendButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                updateUI(); // Update button states after loading finishes
+
+                const loadingDiv = document.getElementById('loading-indicator');
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+            }
+        }
+
+        // Send message function
+        async function sendMessage() {
+            const userMessage = messageInput.value.trim();
+            if (!userMessage || isLoading) return;
+
+            addMessage('user', userMessage);
+            messageInput.value = '';
+            toggleLoading(true);
+
+            const maxRetries = 3;
+            let delay = 1000;
+
+            try {
+                const prompt = `Te egy segítőkész és átfogó AI asszisztens vagy. Válaszolj a felhasználó kérdéseire és kéréseire részletesen, mintha hozzáférésed lenne a legfrissebb internetes információkhoz.
+                Felhasználó: "${userMessage}"`;
+
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                let botResponse = null;
+
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            botResponse = result.candidates[0].content.parts[0].text;
+                            break;
+                        } else {
+                            console.error(`API response in invalid format or status code not OK (retry ${i + 1}/${maxRetries}):`, result, `Status: ${response.status}`);
+                            if (i < maxRetries - 1) {
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                delay *= 2;
+                            }
+                        }
+                    } catch (fetchError) {
+                        console.error(`Error during fetch call (retry ${i + 1}/${maxRetries}):`, fetchError);
+                        if (i < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                        } else {
+                            throw fetchError;
+                        }
+                    }
+                }
+
+                if (botResponse) {
+                    addMessage('bot', botResponse);
+                } else {
+                    addMessage('bot', 'Sajnálom, nem sikerült választ generálnom több próbálkozás után sem. Kérlek, próbáld meg később.');
+                }
+
+            } catch (error) {
+                console.error("Fatal error when sending message:", error);
+                addMessage('bot', 'Hiba történt a válasz generálása során. Kérlek, próbáld újra.');
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        // Function to summarize the current chat
+        async function summarizeChat() {
+            if (isLoading || messages.length === 0) return;
+
+            toggleLoading(true);
+
+            const maxRetries = 3;
+            let delay = 1000;
+
+            try {
+                const conversationText = messages.map(msg => `${msg.sender === 'user' ? 'Felhasználó' : 'IntelliGen'}: ${msg.text}`).join('\n');
+                const summaryPrompt = `Kérlek, foglald össze a következő beszélgetést röviden és tömören:\n\n${conversationText}\n\nÖsszefoglalás:`;
+
+                let chatHistory = [{ role: "user", parts: [{ text: summaryPrompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                let summaryResponse = null;
+
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            summaryResponse = result.candidates[0].content.parts[0].text;
+                            break;
+                        } else {
+                            console.error(`Summarize API response in invalid format or status code not OK (retry ${i + 1}/${maxRetries}):`, result, `Status: ${response.status}`);
+                            if (i < maxRetries - 1) {
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                delay *= 2;
+                            }
+                        }
+                    } catch (fetchError) {
+                        console.error(`Error during summarize fetch call (retry ${i + 1}/${maxRetries}):`, fetchError);
+                        if (i < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                        } else {
+                            throw fetchError;
+                        }
+                    }
+                }
+
+                if (summaryResponse) {
+                    addMessage('bot', `**Beszélgetés összefoglalója:**\n${summaryResponse}`);
+                } else {
+                    addMessage('bot', 'Sajnálom, nem sikerült összefoglalnom a beszélgetést.');
+                }
+
+            } catch (error) {
+                console.error("Fatal error during summarization:", error);
+                addMessage('bot', 'Hiba történt az összefoglalás során. Kérlek, próbáld újra.');
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        // Function to start a new chat
+        function startNewChat() {
+            chatMessagesDiv.innerHTML = ''; // Clear all messages from the display
+            messages = []; // Clear the messages array
+            displayWelcomeMessage(); // Display the welcome message again
+            updateUI(); // Update button states for new chat
+        }
+
+        // Function to show the disclaimer modal
+        function showDisclaimerModal() {
+            disclaimerModal.classList.remove('hidden');
+            // Disable main UI interactions until disclaimer is accepted
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            summarizeButton.disabled = true;
+            newChatButton.disabled = true;
+        }
+
+        // Function to hide the disclaimer modal and enable UI
+        function hideDisclaimerModal() {
+            disclaimerModal.classList.add('hidden');
+            sessionStorage.setItem('disclaimerShown', 'true');
+            updateUI();
+        }
+
+        // Update UI based on current state
+        function updateUI() {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            
+            if (messages.length > 0) {
+                summarizeButton.disabled = false;
+                summarizeButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                summarizeButton.disabled = true;
+                summarizeButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // --- Event Listeners ---
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        newChatButton.addEventListener('click', startNewChat);
+        summarizeButton.addEventListener('click', summarizeChat);
+        showDisclaimerButton.addEventListener('click', showDisclaimerModal);
+
+        disclaimerOkButton.addEventListener('click', hideDisclaimerModal);
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            displayWelcomeMessage();
+
+            // Show disclaimer modal if not shown before
+            if (!sessionStorage.getItem('disclaimerShown')) {
+                showDisclaimerModal();
+            } else {
+                // If disclaimer already shown, ensure UI is enabled
+                updateUI();
+            }
+        });
+    </script>
+</body>
+</html>
